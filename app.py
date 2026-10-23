@@ -16,7 +16,7 @@ from tensorflow.keras.models import load_model
 st.image("logo.gif", width='stretch')
 
 # Título
-st.title("🧮 Reconocimiento de números escritos a mano - Alfredo Díaz Claro 2025- UNAB")
+st.title("🧮 Reconocimiento de números escritos a mano - Alfredo Díaz Claro 2026- UNAB")
 
 # Lista de modelos disponibles
 modelos_disponibles = ["numerosD1.keras", "numerosC2.keras", "numerosC3.keras"]
