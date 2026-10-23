@@ -117,4 +117,25 @@ if prediccion_solicitada:
 
         with col1:
             st.subheader("🧠 Modelo D1")
-            st.write(f"Predicción: {predicted_class_d1}" + mostrar_mensaje(predicted_probability_d1, "
+            st.write(f"Predicción: {predicted_class_d1}" + mostrar_mensaje(predicted_probability_d1, "D1"))
+
+        with col2:
+            st.subheader("🧠 Modelo C2")
+            st.write(f"Predicción: {predicted_class_c2}" + mostrar_mensaje(predicted_probability_c2, "C2"))
+
+        with col3:
+            st.subheader("🧠 Modelo C3")
+            st.write(f"Predicción: {predicted_class_c3}" + mostrar_mensaje(predicted_probability_c3, "C3"))
+
+        # Mostrar resumen en tabla
+        resultados = pd.DataFrame({
+            "Modelo": ["D1", "C2", "C3"],
+            "Predicción": [predicted_class_d1, predicted_class_c2, predicted_class_c3],
+            "Confianza": [f"{predicted_probability_d1:.4f}", f"{predicted_probability_c2:.4f}", f"{predicted_probability_c3:.4f}"]
+        })
+
+        st.subheader("📊 Resumen de predicciones")
+        st.table(resultados)
+
+    else:
+        st.warning("⚠️ Por favor, dibuja un número antes de predecir.")
