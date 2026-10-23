@@ -14,7 +14,7 @@ st.write("Dibuja un número del 0 al 9 en el recuadro y presiona el botón **Pre
 @st.cache_resource
 def cargar_modelo():
     # REEMPLAZA 'modelo.h5' POR EL NOMBRE EXACTO DE TU ARCHIVO DE MODELO
-    return tf.keras.models.load_model("modelo.h5")
+    return tf.keras.models.load_model("numerosC2.keras")
 
 # Intentar cargar el modelo
 try:
