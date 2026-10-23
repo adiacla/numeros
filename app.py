@@ -46,14 +46,16 @@ if not all([modelo_d1, modelo_c2, modelo_c3]):
 # Lienzo para dibujar
 st.subheader("🖌️ Dibuja un número")
 canvas_result = st_canvas(
-    fill_color="white",
-    stroke_width=12,
-    stroke_color="black",
-    background_color="white",
+    fill_color="rgba(255, 165, 0, 0.3)",
+    stroke_width=15,
+    stroke_color="#FFFFFF",      # Trazo blanco
+    background_color="#000000",  # Fondo negro
+    update_streamlit=True,
     height=280,
     width=280,
     drawing_mode="freedraw",
     key="canvas",
+    return_image_data=True,      # <--- AGREGA ESTA LÍNEA
 )
 
 # Mostrar mensaje personalizado según la probabilidad
