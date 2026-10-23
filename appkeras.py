@@ -1,72 +1,47 @@
-import streamlit as st
-import tensorflow as tf
 import numpy as np
-from tensorflow.keras.models import load_model
+import streamlit as st
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
-# Cargar el logo
-st.image('logo.gif', use_container_width=True)  # Asegúrate de que el logo esté en la misma carpeta que tu script
-
-# Título
-st.title("ALFREDO DIAZ CLARO 2024")
-
-# Lista de modelos disponibles
-modelos_disponibles = ['numerosD1.keras','numerosC2.keras','numerosC3.keras']
-
-# Función para cargar el modelo
-def load_model_from_file(modelo_path):
-    modelobien = load_model(modelo_path)
-    modelobien.compile(optimizer='adam',
-                        loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-                        metrics=['accuracy'])
-    return modelobien
-
-# Seleccionar el modelo
-modelo_seleccionado = st.selectbox("Selecciona un modelo", modelos_disponibles)
-
-# Cargar el modelo seleccionado
-modelo = load_model_from_file(modelo_seleccionado)
-
-# Configuración del lienzo
-st.title("Dibuja un número")
 canvas_result = st_canvas(
-    fill_color="white",
+    fill_color="rgba(255, 165, 0, 0.3)",
     stroke_width=10,
-    stroke_color="black",
-    background_color="white",
+    stroke_color="#FFFFFF",      # Trazo blanco
+    background_color="#000000",  # Fondo negro
+    update_streamlit=True,
     height=280,
     width=280,
     drawing_mode="freedraw",
     key="canvas",
+    return_image_data=True,
 )
 
 if st.button("Predecir"):
-    if canvas_result.image_data is not None:
-        # Procesar la imagen dibujada
-        img = Image.fromarray(canvas_result.image_data.astype('uint8'))
-        img = img.convert('L')  # Convertir a escala de grises
-        img = img.resize((28, 28))  # Redimensionar a 28x28
-
+    if canvas_result is not None and canvas_result.image_data is not None:
+        # 1. Convertir matriz RGBA a imagen PIL en escala de grises
+        img = Image.fromarray(canvas_result.image_data.astype("uint8")).convert("L")
         img_array = np.array(img)
 
-        # Invertir los colores (blanco a negro)
-        img_array = 255 - img_array  # Cambiar blanco a negro
+        # 2. Validar si el canvas está vacío (si el valor máximo es 0, no hay dibujo)
+        if np.max(img_array) == 0:
+            st.warning("Por favor, dibuja un número antes de predecir.")
+        else:
+            # 3. Redimensionar a 28x28
+            img_resized = img.resize((28, 28))
+            img_array_resized = np.array(img_resized)
 
-        # Normalizar y ajustar la forma
-        img_array = img_array.reshape((28, 28, 1)) / 255.0  # Normalizar y añadir canal
-        img_array = img_array.reshape((1, 28, 28, 1))  # Ajustar a la forma (1, 28, 28, 1)
+            # NOTA: Descomenta la línea de abajo SOLO si tu modelo fue entrenado con trazo negro y fondo blanco
+            # img_array_resized = 255 - img_array_resized
 
-        # Mostrar la imagen dibujada en el tamaño correcto
-        st.image(img, caption="Imagen dibujada", use_container_width=False)
+            # 4. Normalizar (0.0 a 1.0) y ajustar dimensiones a (1, 28, 28, 1)
+            input_data = (img_array_resized / 255.0).reshape((1, 28, 28, 1))
 
-        # Realizar la predicción
-        prediction = modelo.predict(img_array)
-        predicted_class = np.argmax(prediction)
-        predicted_probability = np.max(prediction)  # Probabilidad de la clase predicha
+            # 5. Mostrar la imagen procesada
+            st.image(img_resized, caption="Imagen procesada (28x28)", width=140)
 
-        st.write(f"La predicción es: {predicted_class} con probabilidad: {predicted_probability:.2f}")
-    else:
-        st.warning("Por favor, dibuja un número antes de predecir.")
+            # 6. Realizar la predicción
+            prediction = modelo.predict(input_data)
+            predicted_class = np.argmax(prediction)
+            predicted_probability = np.max(prediction)
 
-
+            st.success(f"La predicción es: **{predicted_class}** (Confianza: {predicted_probability:.2%})")
