@@ -3,14 +3,14 @@
 # pip install streamlit-drawable-canvas
 # pip install pillow pandas
 
-import streamlit as st
-import tensorflow as tf
-import numpy as np
-from tensorflow.keras.models import load_model
-from PIL import Image
-from streamlit_drawable_canvas import st_canvas
 import os
+import numpy as np
 import pandas as pd
+from PIL import Image
+import streamlit as st
+from streamlit_drawable_canvas import st_canvas
+import tensorflow as tf
+from tensorflow.keras.models import load_model
 
 # Mostrar logo
 st.image("logo.gif", width='stretch')
@@ -29,7 +29,7 @@ def load_model_from_file(modelo_path):
         return None
     try:
         modelobien = load_model(modelo_path)
-        return modelobien  # No es necesario recompilar si solo es para predicción
+        return modelobien
     except Exception as e:
         st.error(f"❌ Error al cargar el modelo '{modelo_path}': {e}")
         return None
@@ -41,21 +41,21 @@ modelo_c3 = load_model_from_file("numerosC3.keras")
 
 # Verificar si todos los modelos se cargaron correctamente
 if not all([modelo_d1, modelo_c2, modelo_c3]):
-    st.stop()  # Detiene la ejecución si faltan modelos
+    st.stop()
 
 # Lienzo para dibujar
 st.subheader("🖌️ Dibuja un número")
 canvas_result = st_canvas(
     fill_color="rgba(255, 165, 0, 0.3)",
-    stroke_width=15,
-    stroke_color="#FFFFFF",      # Trazo blanco
-    background_color="#000000",  # Fondo negro
+    stroke_width=18,             # Un grosor algo mayor ayuda al escalar a 28x28
+    stroke_color="#FFFFFF",      # Trazo blanco (MNIST)
+    background_color="#000000",  # Fondo negro (MNIST)
     update_streamlit=True,
     height=280,
     width=280,
     drawing_mode="freedraw",
     key="canvas",
-    return_image_data=True,      # <--- AGREGA ESTA LÍNEA
+    return_image_data=True,
 )
 
 # Mostrar mensaje personalizado según la probabilidad
@@ -68,21 +68,25 @@ def mostrar_mensaje(probabilidad, modelo_nombre):
 # Botón de predicción
 if st.button("Predecir"):
     if canvas_result.image_data is not None:
-        # Procesar la imagen
-        img = Image.fromarray(canvas_result.image_data.astype("uint8"), "RGBA")
-        img = img.convert("L")  # Escala de grises
-        img = img.resize((28, 28))
+        # 1. Obtener datos RGBA del canvas
+        img_rgba = Image.fromarray(canvas_result.image_data.astype("uint8"), "RGBA")
         
-        # Convertir a array e invertir colores
-        img_array = np.array(img)
-        img_array = 255 - img_array  # Invertir: fondo negro, número blanco
+        # 2. Pegar sobre un fondo negro sólido usando la máscara Alfa
+        bg_negro = Image.new("RGB", img_rgba.size, (0, 0, 0))
+        bg_negro.paste(img_rgba, mask=img_rgba.split()[3])
         
-        # Mostrar la imagen invertida
-        st.image(img_array, caption="Imagen procesada (28x28)", use_container_width=False)
+        # 3. Redimensionar a 28x28 y convertir a escala de grises
+        img_resized = bg_negro.resize((28, 28), Image.Resampling.LANCZOS)
+        img_gray = img_resized.convert("L")
         
-        # Preparar para el modelo
+        # 4. Convertir a array numpy (SIN invertir valores)
+        img_array = np.array(img_gray)
+        
+        # Mostrar la imagen procesada tal como la verá el modelo
+        st.image(img_array, caption="Imagen procesada para el modelo (28x28 - Fondo negro, trazo blanco)", use_container_width=False)
+        
+        # 5. Normalizar datos entre 0 y 1 para Keras/TensorFlow
         img_array = img_array.reshape((1, 28, 28, 1)) / 255.0
-                
 
         with st.spinner("🔍 Realizando predicciones..."):
             # Modelo D1
@@ -119,7 +123,7 @@ if st.button("Predecir"):
         resultados = pd.DataFrame({
             "Modelo": ["D1", "C2", "C3"],
             "Predicción": [predicted_class_d1, predicted_class_c2, predicted_class_c3],
-            "Confianza": [predicted_probability_d1, predicted_probability_c2, predicted_probability_c3]
+            "Confianza": [f"{predicted_probability_d1:.4f}", f"{predicted_probability_c2:.4f}", f"{predicted_probability_c3:.4f}"]
         })
 
         st.subheader("📊 Resumen de predicciones")
